@@ -50,7 +50,6 @@ void sort_by_song(struct Playlist* playlist) {
         return;
     }
     
-    // Crie um array de ponteiros para nós e copie os nós para o array
     int num_nodes = 0;
     struct Node* current_node = playlist->head;
     do {
@@ -61,14 +60,15 @@ void sort_by_song(struct Playlist* playlist) {
     struct Node** node_array = (struct Node**)malloc(num_nodes * sizeof(struct Node*));
     
     current_node = playlist->head;
-    for (int i = 0; i < num_nodes; i++) {
+    int i;
+    for (i = 0; i < num_nodes; i++) {
         node_array[i] = current_node;
         current_node = current_node->next;
     }
     
-    // Classifique o array de nós com base no nome da música
-    for (int i = 0; i < num_nodes - 1; i++) {
-        for (int j = 0; j < num_nodes - i - 1; j++) {
+    int j;
+    for (i = 0; i < num_nodes - 1; i++) {
+        for (j = 0; j < num_nodes - i - 1; j++) {
             if (strcmp(node_array[j]->song, node_array[j + 1]->song) > 0) {
                 struct Node* temp = node_array[j];
                 node_array[j] = node_array[j + 1];
@@ -77,14 +77,13 @@ void sort_by_song(struct Playlist* playlist) {
         }
     }
     
-    // Reconstrua a lista encadeada a partir do array ordenado
     playlist->head = node_array[0];
     playlist->head->prev = node_array[num_nodes - 1];
     node_array[num_nodes - 1]->next = playlist->head;
     
-    for (int i = 1; i < num_nodes; i++) {
-        node_array[i]->prev = node_array[i - 1];
-        node_array[i - 1]->next = node_array[i];
+    for (i = 0; i < num_nodes; i++) {
+        node_array[i] = current_node;
+        current_node = current_node->next;
     }
     
     free(node_array);
@@ -92,7 +91,6 @@ void sort_by_song(struct Playlist* playlist) {
 
 void insert(struct Playlist* playlist, const char* artist, const char* song) {
     append(playlist, artist, song);
-    // Salve a playlist em um arquivo aqui...
 }
 
 void remove_song(struct Playlist* playlist, const char* song) {
@@ -199,20 +197,25 @@ void save_to_file(struct Playlist* playlist) {
 
     fclose(file);
 }
-
-
-// Implemente as funções load_from_file e save_to_file aqui...
+void free_playlist(struct Playlist* playlist) {
+  struct Node* current_node = playlist->head;
+  while (current_node != NULL) {
+    struct Node* next_node = current_node->next;
+    free(current_node);
+    current_node = next_node;
+  }
+}
 
 int main() {
-    struct Playlist playlist;
-    playlist.head = NULL;
-    playlist.current = NULL;
+  struct Playlist playlist;
+  playlist.head = NULL;
+  playlist.current = NULL;
 
-    load_from_file(&playlist);
+  load_from_file(&playlist);
 
-    // Carregue os dados do arquivo aqui...
+  char choice;
 
-    while (1) {
+  	while (1) {
         printf("\nMenu:\n");
         printf("1. Exibir a playlist pela ordem de cadastro\n");
         printf("2. Exibir a playlist ordenada pelo nome das músicas\n");
@@ -223,11 +226,13 @@ int main() {
         printf("7. Retornar à música anterior\n");
         printf("8. Sair\n");
 
-        char choice[10];
         printf("Escolha uma opção: ");
-        fgets(choice, sizeof(choice), stdin);
+        scanf(" %c", &choice);
 
-        switch (choice[0]) {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+
+        switch (choice) {
             case '1':
                 display(&playlist);
                 break;
@@ -239,24 +244,24 @@ int main() {
                 char song[100];
                 printf("Digite o nome do artista: ");
                 fgets(artist, sizeof(artist), stdin);
-                artist[strcspn(artist, "\n")] = '\0';  // Remover a quebra de linha
+                artist[strcspn(artist, "\n")] = '\0';
                 printf("Digite o nome da música: ");
                 fgets(song, sizeof(song), stdin);
-                song[strcspn(song, "\n")] = '\0';  // Remover a quebra de linha
+                song[strcspn(song, "\n")] = '\0';
                 insert(&playlist, artist, song);
                 break;
             case '4':
                 char remove_song_name[100];
                 printf("Digite o nome da música a ser removida: ");
                 fgets(remove_song_name, sizeof(remove_song_name), stdin);
-                remove_song_name[strcspn(remove_song_name, "\n")] = '\0';  // Remover a quebra de linha
+                remove_song_name[strcspn(remove_song_name, "\n")] = '\0';
                 remove_song(&playlist, remove_song_name);
                 break;
             case '5':
                 char search_song_name[100];
                 printf("Digite o nome da música a ser buscada: ");
                 fgets(search_song_name, sizeof(search_song_name), stdin);
-                search_song_name[strcspn(search_song_name, "\n")] = '\0';  // Remover a quebra de linha
+                search_song_name[strcspn(search_song_name, "\n")] = '\0';
                 search(&playlist, search_song_name);
                 break;
             case '6':
@@ -266,13 +271,14 @@ int main() {
                 prev_song(&playlist);
                 break;
             case '8':
-                // Implemente a função para sair e liberar a memória alocada
+                save_to_file(&playlist);
                 return 0;
             default:
                 printf("Opção inválida. Tente novamente.\n");
                 break;
         }
     }
-
+	free_playlist(&playlist);
     return 0;
 }
+
